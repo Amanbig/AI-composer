@@ -84,7 +84,12 @@ with st.sidebar:
         st.success("✅ API Key loaded from Environment")
         # Checkbox to override if needed
         if st.checkbox("Override API Key"):
-            api_key = st.text_input("OpenRouter API Key", value=env_key, type="password")
+            # Show empty input so we don't expose the env key
+            override_key = st.text_input("New OpenRouter API Key", type="password", help="Leave empty to use the environment key.")
+            if override_key:
+                api_key = override_key
+            else:
+                 api_key = env_key
         else:
             api_key = env_key
     else:
@@ -197,18 +202,45 @@ with col1:
         st.divider()
         st.subheader("🔊 Playback")
         
-        # Save to temp file for playback
-        # In a real app we might use io.BytesIO to avoid disk writes,
-        # but saving file is robust for st.audio
-        output_file = "streamlit_output.wav"
-        st.session_state.synth.save_wav(output_file, generated_audio)
+    # --- Output Section ---
+    if generated_audio is not None:
+        st.divider()
+        st.subheader("🔊 Playback")
         
-        st.audio(output_file)
+        # Directory for generated files
+        OUTPUT_DIR = "music_gen/generated"
+        if not os.path.exists(OUTPUT_DIR):
+            os.makedirs(OUTPUT_DIR, exist_ok=True)
+            
+        # Cleanup old files (older than 1 hour)
+        import time
+        current_time = time.time()
+        for f in os.listdir(OUTPUT_DIR):
+            f_path = os.path.join(OUTPUT_DIR, f)
+            if os.path.isfile(f_path):
+                creation_time = os.path.getctime(f_path)
+                if (current_time - creation_time) > 3600: # 3600 seconds = 1 hour
+                    try:
+                        os.remove(f_path)
+                    except Exception:
+                        pass
+        
+        # Save to unique file
+        import uuid
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        unique_id = str(uuid.uuid4())[:8]
+        output_filename = f"melody_{timestamp}_{unique_id}.wav"
+        output_path = os.path.join(OUTPUT_DIR, output_filename)
+        
+        st.session_state.synth.save_wav(output_path, generated_audio)
+        
+        st.audio(output_path)
         
         st.download_button(
             label="Download .WAV",
-            data=open(output_file, 'rb'),
-            file_name="my_melody.wav",
+            data=open(output_path, 'rb'),
+            file_name=output_filename,
             mime="audio/wav"
         )
 
