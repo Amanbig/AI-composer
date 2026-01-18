@@ -1,11 +1,17 @@
 
 import streamlit as st
+import extra_streamlit_components as stx
 from modules.db import get_db
 from modules.auth import create_user, authenticate_user
+from modules.auth_token import create_access_token
 from sqlalchemy.exc import IntegrityError
+import time
 
-def render_login_ui():
+def render_login_ui(cookie_manager):
     """Renders the login/register page container"""
+    
+    # Initialize CookieManager (Passed from app.py)
+    # cookie_manager = stx.CookieManager() # Removed to avoid dup key
     
     # Center the content using columns
     col1, col2, col3 = st.columns([1, 2, 1])
@@ -29,7 +35,7 @@ def render_login_ui():
                     username = st.text_input("Username")
                     password = st.text_input("Password", type="password")
                     st.markdown("<br>", unsafe_allow_html=True)
-                    submitted = st.form_submit_button("Sign In", use_container_width=True)
+                    submitted = st.form_submit_button("Sign In", width="stretch")
                     
                     if submitted:
                         if not username or not password:
@@ -38,8 +44,13 @@ def render_login_ui():
                             db = next(get_db())
                             user = authenticate_user(db, username, password)
                             if user:
+                                # Create Token
+                                token = create_access_token(data={"sub": user.username})
+                                cookie_manager.set("auth_token", token, key="set_login_token")
+                                
                                 st.session_state.user = {'id': user.id, 'username': user.username}
-                                st.success(f"Welcome back, {user.username}! Redirecting...")
+                                st.success(f"Welcome back, {user.username}!")
+                                time.sleep(0.5) # Give time for cookie to set
                                 st.rerun()
                             else:
                                 st.error("Invalid username or password")
@@ -50,7 +61,7 @@ def render_login_ui():
                     new_pass = st.text_input("Choose Password", type="password")
                     confirm_pass = st.text_input("Confirm Password", type="password")
                     st.markdown("<br>", unsafe_allow_html=True)
-                    submitted = st.form_submit_button("Create Account", use_container_width=True)
+                    submitted = st.form_submit_button("Create Account", width="stretch")
                     
                     if submitted:
                         if not new_user or not new_pass:
@@ -61,8 +72,13 @@ def render_login_ui():
                             db = next(get_db())
                             try:
                                 user = create_user(db, new_user, new_pass)
-                                st.success("Account created successfully! Logging in...")
+                                # Create Token
+                                token = create_access_token(data={"sub": user.username})
+                                cookie_manager.set("auth_token", token, key="set_reg_token")
+                                
                                 st.session_state.user = {'id': user.id, 'username': user.username}
+                                st.success("Account created! Logging in...")
+                                time.sleep(0.5)
                                 st.rerun()
                             except IntegrityError:
                                 st.error("Username already exists.")

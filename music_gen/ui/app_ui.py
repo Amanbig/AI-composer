@@ -9,45 +9,51 @@ from modules.synthesizer import Synthesizer
 from modules.composer import MarkovComposer
 from modules import visualizer
 
-def render_sidebar(user):
+def render_sidebar(user, cookie_manager):
     with st.sidebar:
-        st.subheader(f"👤 {user['username']}")
-        if st.button("Logout", type="secondary"):
+        # User Profile
+        col_p1, col_p2 = st.columns([1, 3])
+        with col_p1:
+            st.markdown("<h2 style='text-align: center; margin: 0;'>👤</h2>", unsafe_allow_html=True)
+        with col_p2:
+            st.markdown(f"**{user['username']}**")
+            st.caption("Pro Member") # Placeholder
+            
+        if st.button("Logout", type="secondary", width="stretch"):
+            # import extra_streamlit_components as stx
+            # cookie_manager = stx.CookieManager()
+            cookie_manager.delete("auth_token")
             st.session_state.user = None
             st.rerun()
             
         st.markdown("---")
-        st.title("🎛️ Settings")
         
-        st.subheader("APIs")
-        env_key = os.getenv("OPENROUTER_API_KEY", "")
-        
-        if env_key:
-            st.success("✅ API Key active")
-            if st.checkbox("Override Key"):
-                override_key = st.text_input("New Key", type="password", help="Leave empty to use env key")
-                if override_key:
-                    api_key = override_key
+        # Settings Groups with Expander
+        with st.expander("🔑 API Configuration", expanded=True):
+            env_key = os.getenv("OPENROUTER_API_KEY", "")
+            if env_key:
+                st.success("✅ System Key Active")
+                if st.checkbox("Use Custom Key"):
+                   api_key = st.text_input("Custom API Key", type="password")
                 else:
                     api_key = env_key
             else:
-                api_key = env_key
-        else:
-            api_key = st.text_input("OpenRouter API Key", type="password", help="Required for Agentic AI")
+                api_key = st.text_input("API Key", type="password")
         
-        st.subheader("Audio Engine")
-        bpm = st.slider("Tempo (BPM)", 60, 240, 120)
-        wave_type = st.selectbox("Waveform", ["sine", "square", "sawtooth"])
+        st.markdown("### 🎛️ Audio Engine")
+        bpm = st.slider("Tempo", 60, 240, 120, help="Beats Per Minute")
+        wave_type = st.selectbox("Oscillator", ["sine", "square", "sawtooth"], format_func=lambda x: x.capitalize())
         
-        st.subheader("AI Settings")
-        ai_length = st.slider("Composition Length", 8, 64, 16)
+        st.markdown("### 🧠 AI Model")
+        ai_length = st.number_input("Sequence Length", min_value=4, max_value=128, value=16, step=4)
         
-        st.markdown("---")
+        st.info("💡 **Tip:** Try mixing manual inputs with AI generation!")
+        
         return api_key, bpm, wave_type, ai_length
 
-def render_main_app(user):
+def render_main_app(user, cookie_manager):
     # Sidebar
-    api_key, bpm, wave_type, ai_length = render_sidebar(user)
+    api_key, bpm, wave_type, ai_length = render_sidebar(user, cookie_manager)
     
     # Init components
     if 'synth' not in st.session_state:
@@ -171,7 +177,7 @@ def handle_output(audio, user, prompt):
         st.audio(path)
     with col_dl:
         with open(path, "rb") as f:
-            st.download_button("Download", f, filename, "audio/wav", use_container_width=True)
+            st.download_button("Download", f, filename, "audio/wav", width="stretch")
             
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -182,7 +188,7 @@ def render_visualization_and_history(audio, user):
     if audio is not None:
         if 'synth' in st.session_state:
              fig = visualizer.plot_waveform(audio, st.session_state.synth.sample_rate)
-             st.pyplot(fig, use_container_width=True)
+             st.pyplot(fig, width="stretch")
     else:
         st.info("Generate audio to see waveform")
     st.markdown('</div>', unsafe_allow_html=True)
@@ -224,7 +230,7 @@ def render_visualization_and_history(audio, user):
             
             if img_path:
                 with st.expander("See Waveform"):
-                    st.image(img_path, use_container_width=True)
+                    st.image(img_path, width="stretch")
             
             # Action Row
             col_audio, col_actions = st.columns([3, 1])
