@@ -139,3 +139,74 @@ class MusicAgent:
         }
         result = self.workflow.invoke(initial_state)
         return result
+
+def get_available_models(api_key: str = None, only_free: bool = True) -> List[str]:
+    """
+    Fetches the list of available models from OpenRouter.
+    Returns a list of model IDs to be used in the UI.
+    Falls back to a default list if fetching fails.
+    """
+    default_free_models = [
+        "google/gemini-2.0-flash-exp:free",
+        "google/gemini-exp-1206:free",
+        "meta-llama/llama-3.2-11b-vision-instruct:free",
+        "mistralai/mistral-7b-instruct:free",
+        "microsoft/phi-3-medium-128k-instruct:free",
+        "huggingfaceh4/zephyr-7b-beta:free",
+    ]
+    
+    if not api_key:
+        return default_free_models
+
+    import requests
+    try:
+        response = requests.get(
+            "https://openrouter.ai/api/v1/models",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+            },
+            timeout=5
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            all_models = data.get("data", [])
+            
+            filtered_models = []
+            for m in all_models:
+                mid = m.get("id")
+                pricing = m.get("pricing", {})
+                
+                # Check for free
+                is_free = False
+                if mid.endswith(":free"):
+                    is_free = True
+                else:
+                    try:
+                        p_prompt = float(pricing.get("prompt", -1))
+                        p_completion = float(pricing.get("completion", -1))
+                        if p_prompt == 0 and p_completion == 0:
+                            is_free = True
+                    except (ValueError, TypeError):
+                        pass
+                
+                if only_free:
+                    if is_free:
+                        filtered_models.append(mid)
+                else:
+                    filtered_models.append(mid)
+            
+            filtered_models.sort()
+            
+            # If search succeeded but returned empty, use defaults.
+            if not filtered_models and only_free:
+                return default_free_models
+                
+            return filtered_models
+        else:
+            print(f"Failed to fetch models: {response.status_code}")
+            return default_free_models
+            
+    except Exception as e:
+        print(f"Error fetching models: {e}")
+        return default_free_models

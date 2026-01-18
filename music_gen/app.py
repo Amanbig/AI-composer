@@ -147,20 +147,23 @@ with col1:
         st.markdown("Describe the feeling or style, and the Agent will write it for you.")
         
         # Free model list for OpenRouter
-        free_models = [
-            "google/gemini-2.0-flash-exp:free",
-            "google/gemini-exp-1206:free",
-            "meta-llama/llama-3.2-11b-vision-instruct:free",
-            "mistralai/mistral-7b-instruct:free",
-            "microsoft/phi-3-medium-128k-instruct:free",
-            "huggingfaceh4/zephyr-7b-beta:free",
-        ]
+        # Dynamic Model Fetching
+        from src.agent import get_available_models
+        
+        # Cache this to avoid hitting API on every rerun
+        @st.cache_data(ttl=3600)
+        def fetch_models(key, only_free):
+            return get_available_models(key, only_free)
+        
+        only_free_models = st.checkbox("Show only free models", value=True, help="Filter for models with 0 pricing")
+        
+        available_models = fetch_models(api_key, only_free_models)
         
         selected_model = st.selectbox(
-            "Select AI Model (Free Tier)", 
-            free_models, 
+            "Select AI Model (OpenRouter)", 
+            available_models, 
             index=0,
-            help="Choose a free model from OpenRouter"
+            help="Models fetched from OpenRouter."
         )
         
         agent_prompt = st.text_input("Prompt", placeholder="A sad melody in D minor...")
