@@ -3,8 +3,13 @@ import streamlit as st
 import numpy as np
 import visualizer
 import os
-from synthesizer import Synthesizer
-from composer import MarkovComposer
+from src.synthesizer import Synthesizer
+from src.composer import MarkovComposer
+import src.visualizer as visualizer
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # --- Page Configuration ---
 st.set_page_config(
@@ -55,8 +60,8 @@ if 'composer' not in st.session_state:
     training_data = []
     
     # 1. Load from file
-    if os.path.exists("songs.txt"):
-        with open("songs.txt", "r") as f:
+    if os.path.exists("data/songs.txt"):
+        with open("data/songs.txt", "r") as f:
             file_songs = [line.strip() for line in f if line.strip()]
             training_data.extend(file_songs)
             
@@ -70,6 +75,20 @@ if 'composer' not in st.session_state:
 # --- Sidebar ---
 with st.sidebar:
     st.title("🎛️ Settings")
+    
+    st.subheader("APIs")
+    # Tries to get key from env
+    env_key = os.getenv("OPENROUTER_API_KEY", "")
+    
+    if env_key:
+        st.success("✅ API Key loaded from Environment")
+        # Checkbox to override if needed
+        if st.checkbox("Override API Key"):
+            api_key = st.text_input("OpenRouter API Key", value=env_key, type="password")
+        else:
+            api_key = env_key
+    else:
+        api_key = st.text_input("OpenRouter API Key", type="password", help="Required for Agentic AI. Add OPENROUTER_API_KEY to .env to hide this.")
     
     st.subheader("Audio Engine")
     bpm = st.slider("Tempo (BPM)", 60, 240, 120, help="Speed of the music")
@@ -90,7 +109,7 @@ st.markdown("### Create music from text or let AI invent a melody.")
 col1, col2 = st.columns([1.5, 1])
 
 with col1:
-    tab_manual, tab_ai = st.tabs(["✍️ Manual Input", "🤖 AI Composer"])
+    tab_manual, tab_ai, tab_agent = st.tabs(["✍️ Manual Input", "🤖 Markov Composer", "🧠 Agentic AI"])
     
     generated_audio = None
     generated_notes = ""
@@ -113,7 +132,7 @@ with col1:
                     )
     
     with tab_ai:
-        st.markdown(f"AI will compose a new melody based on **{len(st.session_state.composer.chain)}** learned pitch transitions.")
+        st.markdown(f"Markov Chain: Generates melody based on **{len(st.session_state.composer.chain)}** learned pitch transitions.")
         
         if st.button("✨ Compose & Generate", key="btn_ai"):
             with st.spinner("Composing..."):
@@ -123,6 +142,52 @@ with col1:
                 generated_audio = st.session_state.synth.generate_audio(
                     generated_notes, bpm=bpm, wave_type=wave_type
                 )
+                
+    with tab_agent:
+        st.markdown("Describe the feeling or style, and the Agent will write it for you.")
+        
+        # Free model list for OpenRouter
+        free_models = [
+            "google/gemini-2.0-flash-exp:free",
+            "google/gemini-exp-1206:free",
+            "meta-llama/llama-3.2-11b-vision-instruct:free",
+            "mistralai/mistral-7b-instruct:free",
+            "microsoft/phi-3-medium-128k-instruct:free",
+            "huggingfaceh4/zephyr-7b-beta:free",
+        ]
+        
+        selected_model = st.selectbox(
+            "Select AI Model (Free Tier)", 
+            free_models, 
+            index=0,
+            help="Choose a free model from OpenRouter"
+        )
+        
+        agent_prompt = st.text_input("Prompt", placeholder="A sad melody in D minor...")
+        
+        if st.button("🚀 Agent Generate", key="btn_agent"):
+            if not api_key:
+                st.error("Please enter an OpenRouter API Key in the sidebar.")
+            else:
+                try:
+                    from src.agent import MusicAgent
+                    with st.spinner(f"Agent ({selected_model}) is thinking..."):
+                        agent = MusicAgent(api_key=api_key, model_name=selected_model)
+                        result = agent.run(agent_prompt)
+                        
+                        if result['is_valid']:
+                            generated_notes = result['notes']
+                            st.success(f"**Agent Generated:** `{generated_notes}`")
+                             # Attempt to synthesize
+                            generated_audio = st.session_state.synth.generate_audio(
+                                generated_notes, bpm=bpm, wave_type=wave_type
+                            )
+                        else:
+                            st.error(f"Agent failed to generate valid notes after retries. Last error: {result.get('error')}")
+                            st.warning(f"Raw Output: {result.get('notes')}")
+                            
+                except Exception as e:
+                    st.error(f"Agent Error: {str(e)}")
     
     # --- Output Section ---
     if generated_audio is not None:

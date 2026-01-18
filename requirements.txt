@@ -2,3 +2,7 @@ numpy
 scipy
 streamlit
 matplotlib
+langchain
+langgraph
+langchain-openai
+python-dotenv
