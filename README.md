@@ -1,13 +1,5 @@
 # 🎵 AI Music Composer
 
-A Python-based AI Music Generation System that creates melodies using:
-1.  **Algorithmic Synthesis**: Basic sine/square/sawtooth waveforms.
-2.  **Markov Chains**: Learns from existing songs to generate new ones.
-3.  **Agentic AI**: Uses LLMs (via OpenRouter) to compose music from natural language descriptions (e.g., "A sad melody").
-
-## 🚀 Features
-- **Web UI**: Interactive dashboard built with Streamlit.
-- **Waveform Visualizer**: Real-time plotting of generated audio.
 - **Multiple Engines**: Switch between manual input, Markov Chain, and Agentic AI.
 - **Customizable**: Adjust BPM, Waveform (Sine/Square/Sawtooth), and composition length.
 

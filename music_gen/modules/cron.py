@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 def cleanup_old_files():
     """
-    Deletes files in music_gen/generated that are older than 1 hour.
+    Deletes files in music_gen/generated that are older than 1 day.
     Ignores subdirectories to be safe, or handles them if we structure by user.
     """
     OUTPUT_DIR = "music_gen/generated"
@@ -22,7 +22,7 @@ def cleanup_old_files():
             file_path = os.path.join(root, f)
             try:
                 creation_time = os.path.getctime(file_path)
-                if (current_time - creation_time) > 3600: # 1 hour
+                if (current_time - creation_time) > 86400: # 1 day
                     os.remove(file_path)
                     print(f"Deleted old file: {file_path}")
             except Exception as e:
