@@ -1,7 +1,20 @@
 # 🎵 AI Music Composer
 
-- **Multiple Engines**: Switch between manual input, Markov Chain, and Agentic AI.
-- **Customizable**: Adjust BPM, Waveform (Sine/Square/Sawtooth), and composition length.
+A full-stack AI Music Generation System featuring secure authentication, visualizing tools, and a powerful multi-engine composer.
+
+## 🚀 Features
+- **Core Engines**:
+    - **Manual**: Compose using simple notation (`C4:1` etc).
+    - **Markov Chain**: Stochastic generation learned from training data.
+    - **Agentic AI**: Text-to-music translation using LLMs (OpenRouter/OpenAI).
+- **Web UI**: Modern Streamlit interface with a premium dark theme.
+- **Visualizer**: High-quality waveform plotting and image saving.
+- **User Management**:
+    - Secure Login/Register (bcrypt hashing, SQLite).
+    - Personal generation history and file management.
+- **Robustness**:
+    - Background scheduler handles file cleanup (files kept for **24 hours**).
+    - Modular architecture for scalability.
 
 ## 📦 Installation
 
@@ -9,74 +22,49 @@
 - Python 3.10+
 - [Optional] Docker
 
-### Local Setup
-1.  **Clone the repository**:
+### Setup
+1.  **Clone & Install**:
     ```bash
     git clone https://github.com/Amanbig/AI-composer.git
     cd AI-composer
-    ```
-
-2.  **Create a virtual environment**:
-    ```bash
+    # Create env
     python -m venv venv
-    source venv/bin/activate  # On Windows: venv\Scripts\activate
-    ```
-
-3.  **Install dependencies**:
-    ```bash
+    venv\Scripts\activate # Windows
+    # Install
     pip install -r requirements.txt
     ```
 
-4.  **Configure API Keys (Optional)**:
-    - Create a `.env` file in the root directory.
-    - Add your OpenRouter API Key:
-      ```env
-      OPENROUTER_API_KEY=sk-or-v1-......
-      ```
+2.  **Environment Config**:
+    Create `.env` in root:
+    ```env
+    OPENROUTER_API_KEY=sk-or-v1-...
+    ```
 
-5.  **Run the App**:
+3.  **Run**:
     ```bash
-    streamlit run app.py
+    streamlit run music_gen/app.py
     ```
 
 ## 🐳 Running with Docker
 
-1.  **Build the image**:
-    ```bash
-    docker build -t ai-music-composer .
-    ```
+```bash
+docker build -t ai-composer .
+docker run -p 8501:8501 --env-file .env ai-composer
+```
+Access at `http://localhost:8501`
 
-2.  **Run the container**:
-    ```bash
-    docker run -p 8501:8501 --env-file .env ai-music-composer
-    ```
-
-3.  Access the app at `http://localhost:8501`.
-
-## 📂 Project Structure
-- `src/`: Core logic modules.
-  - `synthesizer.py`: Audio generation engine.
-  - `composer.py`: Markov Chain logic.
-  - `agent.py`: LangGraph agent for LLM composition.
-  - `visualizer.py`: Matplotlib plotting tools.
-- `data/`: Data files.
-  - `songs.txt`: Training data for the Markov Chain.
-- `app.py`: Streamlit entry point.
-- `main.py`: Command-line interface entry point.
+## 📂 Structure
+- `music_gen/`: Main package
+  - `app.py`: Application entry point
+  - `modules/`: Core logic (Auth, DB, Cron, Agents)
+  - `ui/`: Frontend components
+  - `generated/`: Output files per user
+  - `data/`: SQLite DB and training sets
 
 ## 📝 Usage
-
-### Data format relative to music
-- **Notes**: Standard notation `C4`, `A#3`, `Db5`.
-- **Rhythm**: Add duration with colon `Note:Duration`.
-  - `C4:1` (Quarter note)
-  - `C4:0.5` (Eighth note)
-  - `R:1` (Rest)
-
-### Agentic AI
-- Go to "Agentic AI" tab.
-- Enter a prompt: *"Create a fast-paced electronic melody."*
-- The agent will generate, validate, and play the result!
+- **Sign Up**: Create an account to access the tools.
+- **Compose**: Use the "Agentic AI" tab to describe your song in English.
+- **History**: View, download, and see visualizations of your past creations.
 
 ---
 *Created with ❤️ by Antigravity*
