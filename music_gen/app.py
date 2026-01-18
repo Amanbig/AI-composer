@@ -38,6 +38,7 @@ st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
 # Initialize System (db init is now handled by get_db on demand)
 if 'scheduler_started' not in st.session_state:
+    init_db() # Create tables if not exist
     start_scheduler()
     st.session_state.scheduler_started = True
 
