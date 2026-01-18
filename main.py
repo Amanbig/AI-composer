@@ -8,6 +8,7 @@ def main():
     parser = argparse.ArgumentParser(description="Music Generation System")
     parser.add_argument("notes", nargs="*", help="String of notes (e.g. 'C4 E4 G4')")
     parser.add_argument("--wave", choices=['sine', 'square', 'sawtooth'], default='sine', help="Waveform type")
+    parser.add_argument("--bpm", type=int, default=120, help="Tempo in Beats Per Minute (default: 120)")
     parser.add_argument("--compose", action="store_true", help="Generate a melody using AI")
     
     args = parser.parse_args()
@@ -23,15 +24,16 @@ def main():
         composer.train(data)
         input_string = composer.compose(length=20)
         print(f"AI Composed: {input_string}")
+        # Default BPM for AI is 120, can be overridden
     elif args.notes:
         input_string = " ".join(args.notes)
     else:
         print("Enter a string of notes (e.g., 'C4 D4 E4'):")
         input_string = input(">> ")
         
-    print(f"Generating audio for: {input_string} using {args.wave} wave")
+    print(f"Generating audio for: {input_string} using {args.wave} wave at {args.bpm} BPM")
     
-    audio_data = synth.generate_audio(input_string, wave_type=args.wave)
+    audio_data = synth.generate_audio(input_string, bpm=args.bpm, wave_type=args.wave)
     
     if audio_data is not None:
         output_file = "output.wav"

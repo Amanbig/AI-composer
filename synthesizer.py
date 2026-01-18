@@ -74,21 +74,47 @@ class Synthesizer:
             
         return wave * envelope
 
-    def generate_audio(self, note_sequence, duration_per_note=0.5, wave_type='sine'):
+    def generate_audio(self, note_sequence, bpm=120, wave_type='sine'):
         audio_data = []
         
         notes = note_sequence.split()
         
-        for note in notes:
-            freq = self.get_frequency(note)
+        # 60 seconds / BPM = duration of one beat (quarter note)
+        beat_duration = 60.0 / bpm
+        
+        for token in notes:
+            # Parse token "Note:Duration" (e.g., "C4:1", "D#5:0.5")
+            if ':' in token:
+                note_str, duration_str = token.split(':')
+                try:
+                    duration_multiplier = float(duration_str)
+                except ValueError:
+                    duration_multiplier = 1.0
+            else:
+                note_str = token
+                duration_multiplier = 1.0 # Default to 1 beat
+            
+            # Allow "R" or "REST" for silence
+            if note_str.upper() in ["R", "REST"]:
+                freq = 0.0
+            else:
+                freq = self.get_frequency(note_str)
+            
+            duration_sec = beat_duration * duration_multiplier
+            
             if freq > 0:
-                wave = self.generate_wave(freq, duration_per_note, wave_type)
-                wave = self.apply_envelope(wave, duration_per_note)
+                wave = self.generate_wave(freq, duration_sec, wave_type)
+                wave = self.apply_envelope(wave, duration_sec)
                 audio_data.append(wave)
+            else:
+                # Insert silence for rests
+                silence = np.zeros(int(self.sample_rate * duration_sec))
+                audio_data.append(silence)
                 
-            # Add a tiny bit of silence/spacing
-            silence = np.zeros(int(self.sample_rate * 0.05))
-            audio_data.append(silence)
+            # Add a tiny bit of silence/spacing (can be removed if we want legato)
+            # reduced to very small amount or zero if we trust envelope
+            gap = np.zeros(int(self.sample_rate * 0.01)) 
+            audio_data.append(gap)
             
         if not audio_data:
             return None
