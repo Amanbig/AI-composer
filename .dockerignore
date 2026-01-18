@@ -1,0 +1,21 @@
+
+# Version control
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+venv
+.env
+.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# App specific
+output.wav
+streamlit_output.wav

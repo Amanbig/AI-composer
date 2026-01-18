@@ -11,8 +11,8 @@ COPY requirements.txt .
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application code
-COPY . .
+# Copy the application code
+COPY music_gen/ .
 
 # Expose the port Streamlit runs on
 EXPOSE 8501

@@ -1,7 +1,7 @@
 
 import streamlit as st
 import numpy as np
-import visualizer
+
 import os
 from src.synthesizer import Synthesizer
 from src.composer import MarkovComposer
