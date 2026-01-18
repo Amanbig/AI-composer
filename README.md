@@ -20,8 +20,8 @@ A Python-based AI Music Generation System that creates melodies using:
 ### Local Setup
 1.  **Clone the repository**:
     ```bash
-    git clone <repo-url>
-    cd ai-music-composer
+    git clone https://github.com/Amanbig/AI-composer.git
+    cd AI-composer
     ```
 
 2.  **Create a virtual environment**:
