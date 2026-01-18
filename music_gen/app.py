@@ -3,14 +3,14 @@ import streamlit as st
 from dotenv import load_dotenv
 import os
 import sys
-import extra_streamlit_components as stx
+import sys
+# import extra_streamlit_components as stx # Removed
 
 # Ensure modules are found (add current dir to path if needed)
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Modules
 from modules.db import init_db
-from modules.auth_token import verify_token
 from modules.db import get_db, User
 from modules.cron import start_scheduler
 from ui.styles import CUSTOM_CSS
@@ -31,23 +31,6 @@ st.set_page_config(
 # Initialize Session State
 if 'user' not in st.session_state:
     st.session_state.user = None
-
-def get_manager():
-    return stx.CookieManager()
-
-cookie_manager = get_manager()
-
-# Check for existing token in cookies if user is not logged in
-if st.session_state.user is None:
-    token = cookie_manager.get(cookie="auth_token")
-    if token:
-        payload = verify_token(token)
-        if payload:
-            # Token valid, fetch user
-            db = next(get_db())
-            user = db.query(User).filter(User.username == payload['sub']).first()
-            if user:
-                st.session_state.user = {'id': user.id, 'username': user.username}
                 # Optional: st.rerun() if strictly needed, but let's see flow
 
 # Load Custom CSS
@@ -60,6 +43,6 @@ if 'scheduler_started' not in st.session_state:
 
 # Routing
 if not st.session_state.user:
-    render_login_ui(cookie_manager)
+    render_login_ui()
 else:
-    render_main_app(st.session_state.user, cookie_manager)
+    render_main_app(st.session_state.user)

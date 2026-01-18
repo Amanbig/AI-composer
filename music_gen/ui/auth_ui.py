@@ -1,17 +1,19 @@
 
 import streamlit as st
-import extra_streamlit_components as stx
+# import extra_streamlit_components as stx # Removed
 from modules.db import get_db
 from modules.auth import create_user, authenticate_user
-from modules.auth_token import create_access_token
+# from modules.auth_token import create_access_token # Removed
 from sqlalchemy.exc import IntegrityError
 import time
 
-def render_login_ui(cookie_manager):
+from datetime import datetime
+# from modules import session_manager # Removed
+
+def render_login_ui():
     """Renders the login/register page container"""
     
     # Initialize CookieManager (Passed from app.py)
-    # cookie_manager = stx.CookieManager() # Removed to avoid dup key
     
     # Center the content using columns
     col1, col2, col3 = st.columns([1, 2, 1])
@@ -44,13 +46,8 @@ def render_login_ui(cookie_manager):
                             db = next(get_db())
                             user = authenticate_user(db, username, password)
                             if user:
-                                # Create Token
-                                token = create_access_token(data={"sub": user.username})
-                                cookie_manager.set("auth_token", token, key="set_login_token")
-                                
                                 st.session_state.user = {'id': user.id, 'username': user.username}
                                 st.success(f"Welcome back, {user.username}!")
-                                time.sleep(0.5) # Give time for cookie to set
                                 st.rerun()
                             else:
                                 st.error("Invalid username or password")
@@ -72,13 +69,8 @@ def render_login_ui(cookie_manager):
                             db = next(get_db())
                             try:
                                 user = create_user(db, new_user, new_pass)
-                                # Create Token
-                                token = create_access_token(data={"sub": user.username})
-                                cookie_manager.set("auth_token", token, key="set_reg_token")
-                                
                                 st.session_state.user = {'id': user.id, 'username': user.username}
                                 st.success("Account created! Logging in...")
-                                time.sleep(0.5)
                                 st.rerun()
                             except IntegrityError:
                                 st.error("Username already exists.")

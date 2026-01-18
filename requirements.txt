@@ -10,5 +10,3 @@ requests
 sqlalchemy
 bcrypt
 apscheduler
-pyjwt
-extra-streamlit-components

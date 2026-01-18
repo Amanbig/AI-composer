@@ -9,7 +9,9 @@ from modules.synthesizer import Synthesizer
 from modules.composer import MarkovComposer
 from modules import visualizer
 
-def render_sidebar(user, cookie_manager):
+# from modules import session_manager
+
+def render_sidebar(user):
     with st.sidebar:
         # User Profile
         col_p1, col_p2 = st.columns([1, 3])
@@ -20,9 +22,7 @@ def render_sidebar(user, cookie_manager):
             st.caption("Pro Member") # Placeholder
             
         if st.button("Logout", type="secondary", width="stretch"):
-            # import extra_streamlit_components as stx
-            # cookie_manager = stx.CookieManager()
-            cookie_manager.delete("auth_token")
+            # session_manager.clear_session()
             st.session_state.user = None
             st.rerun()
             
@@ -51,9 +51,9 @@ def render_sidebar(user, cookie_manager):
         
         return api_key, bpm, wave_type, ai_length
 
-def render_main_app(user, cookie_manager):
+def render_main_app(user):
     # Sidebar
-    api_key, bpm, wave_type, ai_length = render_sidebar(user, cookie_manager)
+    api_key, bpm, wave_type, ai_length = render_sidebar(user)
     
     # Init components
     if 'synth' not in st.session_state:
