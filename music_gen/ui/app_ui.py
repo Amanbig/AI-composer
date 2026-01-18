@@ -70,19 +70,24 @@ def render_main_app(user):
     col1, col2 = st.columns([1.5, 1])
 
     with col1:
-        tab_manual, tab_ai, tab_agent = st.tabs(["✍️ Manual", "🤖 Markov", "🧠 Agent"])
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">🎹 Composition Engine</div>', unsafe_allow_html=True)
+        
+        tab_manual, tab_ai, tab_agent = st.tabs(["Manual Input", "Markov Chain", "Agentic AI"])
         
         generated_audio = None
         prompt_used = ""
         
         with tab_manual:
             user_input = st.text_area("Melody String", value="C4:1 E4:1 G4:1 C5:2", height=100)
+            st.caption("Format: `Note:Duration` (e.g. `C4:1`)")
             if st.button("Generate Audio", key="btn_manual"):
                 with st.spinner("Synthesizing..."):
                     generated_audio = st.session_state.synth.generate_audio(user_input, bpm=bpm, wave_type=wave_type)
                     prompt_used = "Manual Input"
         
         with tab_ai:
+            st.info(f"Learned Transitions: **{len(st.session_state.composer.chain)}**")
             if st.button("✨ Compose & Generate", key="btn_ai"):
                 with st.spinner("Composing..."):
                     generated_notes = st.session_state.composer.compose(length=ai_length)
@@ -118,6 +123,7 @@ def render_main_app(user):
                                 st.error(result.get('error'))
                     except Exception as e:
                         st.error(f"Error: {e}")
+        st.markdown('</div>', unsafe_allow_html=True)
 
         # Save and Output
         if generated_audio is not None:
@@ -127,8 +133,8 @@ def render_main_app(user):
         render_visualization_and_history(generated_audio, user)
 
 def handle_output(audio, user, prompt):
-    st.divider()
-    st.subheader("🔊 Playback")
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">🔊 Playback Studio</div>', unsafe_allow_html=True)
     
     # User specific dir
     OUTPUT_DIR = os.path.join("music_gen/generated", user['username'])
@@ -138,39 +144,100 @@ def handle_output(audio, user, prompt):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     unique_id = str(uuid.uuid4())[:8]
     filename = f"melody_{timestamp}_{unique_id}.wav"
-    path = os.path.join(OUTPUT_DIR, filename)
+    img_filename = f"viz_{timestamp}_{unique_id}.png"
     
+    path = os.path.join(OUTPUT_DIR, filename)
+    img_path = os.path.join(OUTPUT_DIR, img_filename)
+    
+    # Save Audio
     st.session_state.synth.save_wav(path, audio)
+    
+    # Save Visualization
+    if 'synth' in st.session_state:
+         fig = visualizer.plot_waveform(audio, st.session_state.synth.sample_rate)
+         fig.savefig(img_path, facecolor='#0E1117', bbox_inches='tight', pad_inches=0.1)
+         # Clean up memory
+         import matplotlib.pyplot as plt
+         plt.close(fig)
     
     # DB Save
     db = next(get_db())
-    new_gen = Generation(user_id=user['id'], filename=filename, prompt=prompt)
+    new_gen = Generation(user_id=user['id'], filename=filename, image_filename=img_filename, prompt=prompt)
     db.add(new_gen)
     db.commit()
     
-    st.audio(path)
-    with open(path, "rb") as f:
-        st.download_button("Download .WAV", f, filename, "audio/wav")
+    col_play, col_dl = st.columns([3, 1])
+    with col_play:
+        st.audio(path)
+    with col_dl:
+        with open(path, "rb") as f:
+            st.download_button("Download", f, filename, "audio/wav", use_container_width=True)
+            
+    st.markdown('</div>', unsafe_allow_html=True)
 
 def render_visualization_and_history(audio, user):
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">📉 Visualization</div>', unsafe_allow_html=True)
+    
     if audio is not None:
-        st.subheader("📉 Visualization")
         if 'synth' in st.session_state:
              fig = visualizer.plot_waveform(audio, st.session_state.synth.sample_rate)
-             st.pyplot(fig)
+             st.pyplot(fig, use_container_width=True)
     else:
         st.info("Generate audio to see waveform")
+    st.markdown('</div>', unsafe_allow_html=True)
         
-    st.markdown("### 📜 History")
+    # Removed duplicate header
     db = next(get_db())
-    history = db.query(Generation).filter(Generation.user_id == user['id']).order_by(Generation.created_at.desc()).limit(5).all()
+    history = db.query(Generation).filter(Generation.user_id == user['id']).order_by(Generation.created_at.desc()).limit(10).all()
     
+    if not history:
+        st.info("No music generated yet. Create something!")
+        
     for item in history:
-        with st.expander(f"{item.created_at.strftime('%H:%M')} - {item.prompt[:30]}..."):
-            st.caption(f"Prompt: {item.prompt}")
-            user_dir = os.path.join("music_gen/generated", user['username'])
-            h_path = os.path.join(user_dir, item.filename)
-            if os.path.exists(h_path):
-                st.audio(h_path)
-            else:
-                st.warning("File expired/deleted")
+        user_dir = os.path.join("music_gen/generated", user['username'])
+        h_path = os.path.join(user_dir, item.filename)
+        file_exists = os.path.exists(h_path)
+        
+        # Check for visualization image
+        img_path = None
+        if item.image_filename:
+            possible_path = os.path.join(user_dir, item.image_filename)
+            if os.path.exists(possible_path):
+                img_path = possible_path
+            
+        with st.container():
+            st.markdown(f"""
+            <div class="history-card">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div style="width: 100%;">
+                        <span style="font-weight: 600; color: #E2E8F0; font-size: 1rem;">🎵 {item.prompt[:40] or 'Melody'}...</span>
+                        <div style="font-size: 0.8rem; color: #94A3B8; margin-top: 4px;">Created at {item.created_at.strftime('%H:%M • %d %b')}</div>
+                    </div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Layout: Image (Accordion/Expander or just inline) -> Audio -> Actions
+            # Let's put image inside an expander to keep it clean, or just show it small.
+            # User asked to "save the visualization", presumably to see it.
+            
+            if img_path:
+                with st.expander("See Waveform"):
+                    st.image(img_path, use_container_width=True)
+            
+            # Action Row
+            col_audio, col_actions = st.columns([3, 1])
+            
+            with col_audio:
+                if file_exists:
+                    st.audio(h_path)
+                else:
+                    st.error("File not found")
+            
+            with col_actions:
+                if file_exists:
+                    with open(h_path, "rb") as f:
+                        st.download_button("⬇️", f, item.filename, "audio/wav", key=f"dl_{item.id}", help="Download WAV")
+            
+            st.markdown("---")

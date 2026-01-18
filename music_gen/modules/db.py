@@ -20,6 +20,7 @@ class Generation(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, nullable=False) # Foreign key logic handled manually or via simple ID for now
     filename = Column(String, nullable=False)
+    image_filename = Column(String, nullable=True) # New column for saving visualization
     prompt = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
