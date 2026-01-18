@@ -7,3 +7,6 @@ langgraph
 langchain-openai
 python-dotenv
 requests
+sqlalchemy
+bcrypt
+apscheduler

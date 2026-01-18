@@ -1,6 +1,6 @@
 
-from src.synthesizer import Synthesizer
-from src.composer import MarkovComposer
+from music_gen.modules.synthesizer import Synthesizer
+from music_gen.modules.composer import MarkovComposer
 import sys
 import argparse
 
